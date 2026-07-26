@@ -106,7 +106,7 @@ That `volumeClaimTemplates` block is the whole point. It creates a PVC called `d
 
 ## 2. The headless Service and stable DNS
 
-A normal Service gives you one virtual IP and load-balances across the pods behind it. That is wrong for a database, where you need to reach a **specific** instance, the primary, by name.
+A normal Service gives you one virtual IP and load-balances across the pods behind it. That is wrong for a database, where you need to reach one **specific** pod by name, the main database.
 
 A **headless Service** (`clusterIP: None`) does the opposite. It creates no virtual IP. Instead it gives every pod its own DNS name:
 
@@ -127,6 +127,8 @@ You have three ways to run Postgres on Kubernetes. In 2026 the choice is clearer
 | Bitnami chart | The Helm chart every old guide uses | Avoid. Bitnami removed its free images in September 2025, so the chart now fails to pull |
 | Your own manifest | A StatefulSet you write | Best for learning and a single instance. What we build tonight |
 | CloudNativePG | A Postgres operator | Best for production: failover, backups, replicas across AZs |
+
+That last row needs a word. An **operator** is software that runs inside the cluster and manages a complex app for you, a robot DBA. It handles failover (promoting a healthy copy when the database dies) and backups, so you do not hand-roll them. CloudNativePG is the Postgres operator. It is where you go for production. We do not build it tonight.
 
 **The Bitnami trap is real and current.** Broadcom moved the Bitnami catalog to a paid model in late 2025 and deleted the free versioned images from Docker Hub. A `bitnami/postgresql` chart that worked last year now gives `ImagePullBackOff` the moment a pod reschedules. If you follow a 2023 tutorial tonight you will hit it. Do not.
 
@@ -159,7 +161,7 @@ Three ways to deal with it:
 
 - **Pin the pod to its zone.** Node affinity on `topology.kubernetes.io/zone` keeps `postgres-0` in the AZ its volume lives in. It always reschedules where the disk is. The cost: that one AZ is now a single point of failure for the database.
 - **Replicate across zones with an operator.** CloudNativePG runs one Postgres per AZ, each with its own EBS volume in its own zone, then fails over between them. This is the real high-availability answer. It is why the operator exists.
-- **EFS as an escape hatch.** EFS is a shared filesystem that spans all AZs, so a pod can attach it from anywhere. Tempting, but a poor fit for a database. It is slower and pricier than EBS, without the low-latency fsync Postgres wants. We do not pick it.
+- **EFS as an escape hatch.** EFS is a shared filesystem that spans all AZs, so a pod can attach it from anywhere. Tempting, but a poor fit for a database. It is slower and pricier than EBS, without the fast, reliable disk writes Postgres depends on. We do not pick it.
 
 > **The line that earns the mark.** A single-instance database on EBS lives in one AZ. You have two honest choices. Pin the pod to that AZ and accept it as the failure domain. Or run replicas across AZs with an operator. Do not stretch one EBS volume across zones or reach for EFS to dodge the problem. Say which you chose and why.
 
@@ -228,6 +230,7 @@ Skip what you know.
 - **volumeClaimTemplate**: the StatefulSet field that stamps out a per-pod PVC, named after the pod.
 - **Headless Service**: a Service with `clusterIP: None` that gives each pod its own DNS name instead of one shared IP.
 - **Stable network identity**: the fixed DNS name a StatefulSet pod keeps, like `postgres-0.postgres`.
+- **Operator**: software that runs in the cluster and manages a complex app for you, like a robot DBA.
 - **CloudNativePG**: a Kubernetes operator that runs Postgres in production, with failover and backups.
 - **Valkey**: the open-source, BSD-licensed fork of Redis. Same protocol, the default on AWS now.
 - **Append-only file (AOF)**: Redis and Valkey writing every change to a disk log, so data survives a restart.
