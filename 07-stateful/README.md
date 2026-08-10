@@ -1,16 +1,16 @@
-# Episode 7: Postgres and Redis that remember
+# Episode 7: Postgres & Redis
 
 ## This episode
 
-Last week you built storage. This week something finally uses it. Your app needs a database for its data and a cache for speed. Both have to survive a pod being killed or a node being drained. A web pod can die and nobody notices. A database pod that comes back empty is a disaster.
+Last session we covered storage. This week something finally uses it. Your app needs a database for its data and a cache for speed. Both have to survive a pod being killed or a node being drained. A web pod can die and nobody notices. A database pod that comes back empty is a disaster.
 
-The tool for running things that must keep their data and their name is the **StatefulSet**. Tonight you run Postgres and Redis on StatefulSets, each with its own disk from EP6. You also meet the one hard problem that EBS and Kubernetes create together: what happens when a database pod tries to move to another Availability Zone.
+The tool for running things that must keep their data and their name is the **StatefulSet**. Tonight we go through Postgres and Redis on StatefulSets, each with its own disk from EP6. You also meet the one hard problem that EBS and Kubernetes create together: what happens when a database pod tries to move to another Availability Zone.
 
-This delivers the project line:
+This covers the project line:
 
 > Postgres and Redis running in-cluster on StatefulSets, data surviving a pod restart
 
-> The trap: reaching for the Bitnami Postgres chart. As of late 2025 its free images are gone (more on that in section 3). You write your own StatefulSet, because the point is understanding how stateful workloads actually work.
+> The issue: reaching for the Bitnami Postgres chart. As of late 2025 its free images are gone (more on that in section 3). You write your own StatefulSet, because the point is understanding how stateful workloads actually work.
 
 ## What a StatefulSet is, plainly
 
@@ -24,7 +24,7 @@ A database is not interchangeable. The pod holding your data is special. It has 
 
 The mental model: a Deployment's pods are temp staff, any one will do and they wear no name badge. A StatefulSet's pods have an assigned desk with a name plate and a locked drawer that is always theirs.
 
-## What you walk out with
+## By the end of this, you will have:
 
 - A clear sense of when to use a StatefulSet instead of a Deployment.
 - Postgres running on a StatefulSet, with its own disk, surviving a pod delete with the data intact.
