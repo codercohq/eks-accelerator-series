@@ -12,9 +12,26 @@ This covers the project line:
 
 > The issue: reaching for the Bitnami Postgres chart. As of late 2025 its free images are gone (more on that in section 3). You write your own StatefulSet, because the point is understanding how stateful workloads actually work.
 
+## Stateless vs stateful
+
+New to this? This is the idea the whole episode rests on, so start here.
+
+**State is the data an app remembers.** A program is **stateless** when it keeps nothing of its own between requests. Every request carries what it needs, so any copy of the app can serve any request. A web server rendering a page or an API doing a one-off calculation is stateless. If one copy dies, a fresh one picks up straight away and nothing is lost, because there was nothing to lose.
+
+A program is **stateful** when it holds data that must outlive the request and, often, the process itself. A database is the obvious case: the rows you saved have to still be there tomorrow. A cache like Redis holds data in memory. A message queue remembers what it has not delivered yet. These copies are not interchangeable, because each one is holding something the others do not have.
+
+**Why this is hard on Kubernetes.** By default Kubernetes treats pods as disposable. It gives them random names, then replaces or moves them to other nodes whenever it needs to. A pod's local disk is wiped the moment it is replaced. That behaviour is perfect for a stateless web server and fatal for a database.
+
+So a stateful app needs two things a stateless one does not:
+
+- **Storage that outlives the pod.** A disk that stays put when the pod is deleted and reattaches to its replacement. You built this in EP6 with PersistentVolumeClaims backed by EBS.
+- **A stable identity.** The same name and the same disk on every restart, so `postgres-0` is always `postgres-0` and always finds its own data. This is the piece this episode adds.
+
+EP6 solved the storage half. A **StatefulSet** is the object that solves the identity half and ties the two together. The rest of the episode is how.
+
 ## What a StatefulSet is, plainly
 
-New to this? Start here. You already know a **Deployment**: it runs N identical pods with random names and treats them as interchangeable. Kill one and another takes its place. Nobody cares which is which. Perfect for a stateless web server.
+You already know a **Deployment**: it runs N identical pods with random names and treats them as interchangeable. Kill one and another takes its place. Nobody cares which is which. Perfect for a stateless web server.
 
 A database is not interchangeable. The pod holding your data is special. It has to keep the same identity and the same disk every time it restarts. If you run more than one, they come up in order. That is what a **StatefulSet** gives you:
 
