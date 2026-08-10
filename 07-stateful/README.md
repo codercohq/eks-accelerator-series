@@ -50,10 +50,10 @@ Two ideas do the work tonight: a stable identity for each pod and a disk welded 
 ```mermaid
 flowchart TB
   subgraph svc["Headless Service: postgres"]
-    dns0["postgres-0.postgres.svc\n-> pod postgres-0"]
+    dns0["postgres-0.postgres.svc<br/>-> pod postgres-0"]
   end
   sts["StatefulSet postgres"] --> pod0["Pod postgres-0"]
-  pod0 --> pvc0["PVC data-postgres-0\n(gp3, in AZ-a)"]
+  pod0 --> pvc0["PVC data-postgres-0<br/>(gp3, in AZ-a)"]
   pvc0 --> ebs0["EBS volume, AZ-a"]
   dns0 -.resolves to.-> pod0
   app["your app"] -->|connects to postgres-0.postgres| dns0
