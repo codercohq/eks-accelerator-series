@@ -18,6 +18,12 @@ kubectl version --client
 helm version
 ```
 
+## Running it live
+
+For teaching, do the slow parts before the room joins. `./demo-setup.sh` builds the cluster, pre-pulls the Postgres image, starts LocalStack, seeds the secret and installs the operator, so on stage you only run the teaching steps (apply the SecretStore and ExternalSecret, show the sync, then rotate). It is safe to run twice. `./demo-teardown.sh` deletes the cluster afterwards.
+
+To learn it rather than present it, ignore the scripts and follow the numbered steps below by hand.
+
 ## 1. Cluster and LocalStack
 
 ```bash
