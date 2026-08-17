@@ -6,7 +6,7 @@ You can run the whole secrets flow on your laptop, with no AWS account. LocalSta
 
 - A secret living in Secrets Manager (LocalStack), never in your Git repo.
 - The operator turning it into a Kubernetes Secret on its own.
-- A pod reading that Secret as an environment variable.
+- The actual Postgres database from EP7 booting on that password, with nothing typed in by hand.
 - You rotate the secret at the source and watch the cluster catch up by itself.
 
 ## Prerequisites
@@ -34,7 +34,7 @@ LocalStack ships the `awslocal` wrapper, which is the `aws` CLI pointed at Local
 ```bash
 kubectl exec deploy/localstack -- awslocal secretsmanager create-secret \
   --name eks-accel/dev/postgres \
-  --secret-string '{"username":"app","password":"s3cr3t-from-localstack"}'
+  --secret-string '{"username":"app","dbname":"app","password":"s3cr3t-from-localstack"}'
 ```
 
 That secret now lives in Secrets Manager. Nothing about it is in the cluster or your repo yet.
@@ -79,14 +79,30 @@ kubectl logs reader
 # password is: s3cr3t-from-localstack
 ```
 
-## 6. Rotate it and watch the cluster follow
+## 6. Boot the real database on that Secret
+
+The busybox pod was just a proof. Now run the actual EP7 Postgres StatefulSet, which has no secret of its own and takes all three of its credentials from the synced Secret:
+
+```bash
+kubectl apply -f manifests/postgres.yaml
+kubectl rollout status statefulset/postgres
+
+# log in with the password that came from Secrets Manager
+kubectl exec postgres-0 -- sh -c \
+  'PGPASSWORD=s3cr3t-from-localstack psql -U app -d app -tAc "select 1;"'
+# 1
+```
+
+Postgres came up and accepts that password. The password was never written into a manifest. It travelled from LocalStack Secrets Manager, through the operator, into the Secret the StatefulSet mounts.
+
+## 7. Rotate it and watch the cluster follow
 
 Change the secret at the source:
 
 ```bash
 kubectl exec deploy/localstack -- awslocal secretsmanager put-secret-value \
   --secret-id eks-accel/dev/postgres \
-  --secret-string '{"username":"app","password":"ROTATED-v2"}'
+  --secret-string '{"username":"app","dbname":"app","password":"ROTATED-v2"}'
 ```
 
 Wait one refresh interval (15 seconds), then read the Kubernetes Secret again:
@@ -98,6 +114,20 @@ kubectl get secret postgres -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d 
 ```
 
 You changed the secret in one place and the cluster updated itself. No `kubectl edit`, no redeploy of the manifests.
+
+One honest caveat, true on real AWS too. The Kubernetes Secret updated, but the running Postgres did not change its own password, because it read the value once at startup and set the database password then. Syncing a Secret and changing a live database's password are two separate jobs. In production you pair rotation with something that also updates the database. Or you restart the consumer so it picks up the new value. The lab shows the sync half, which is the part External Secrets owns.
+
+## Where the local lab stops
+
+Most of this is faithful to EKS. A few things genuinely cannot be shown on Kind with LocalStack. It is worth naming them so nobody thinks the local run proves them:
+
+- **The IRSA identity.** On EKS the operator assumes its own IAM role through the cluster OIDC provider, with no keys anywhere. Locally there is no real IAM or STS, so the lab uses static `test/test` keys into LocalStack instead. The whole "no access keys" property is real-AWS only.
+- **IAM actually denying things.** Community LocalStack does not enforce IAM policies, so the "scope the role to one secret prefix" rule cannot be tested by watching it deny. The `AccessDenied` on `GetSecretValue`, along with the break-the-trust deep dive in the main README, only fires against real AWS.
+- **Encryption at rest with KMS.** Real Secrets Manager encrypts every secret with a KMS key. LocalStack just stores it.
+- **Managed rotation.** Real Secrets Manager can rotate a secret on a schedule with a Lambda. That is an AWS-side feature, not something the operator or Kind can stand in for.
+- **Private networking.** On EKS the operator reaches Secrets Manager over a VPC endpoint. Here it is a Service in the cluster.
+
+Everything else, the SecretStore, the ExternalSecret, the synced Secret and a real app consuming it, is exactly what you run on EKS.
 
 ## How this maps to EKS
 
