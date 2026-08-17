@@ -1,0 +1,19 @@
+# A throwaway pod that reads the synced Secret as an environment variable, the
+# same way a real app would. It prints the password and exits, so you can see
+# the value came all the way through from Secrets Manager.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: reader
+spec:
+  restartPolicy: Never
+  containers:
+    - name: reader
+      image: busybox:1.36
+      command: ["sh", "-c", "echo password is: $POSTGRES_PASSWORD; sleep 3"]
+      env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres
+              key: POSTGRES_PASSWORD

@@ -1,0 +1,10 @@
+# Helm values for the External Secrets Operator in the lab.
+# installCRDs brings in the SecretStore and ExternalSecret types.
+# The two env vars point the AWS SDK at LocalStack instead of real AWS. On a
+# real cluster you delete these, because the SDK then talks to real AWS.
+installCRDs: true
+extraEnv:
+  - name: AWS_ENDPOINT_URL
+    value: http://localstack.default.svc.cluster.local:4566
+  - name: AWS_REGION
+    value: us-east-1
