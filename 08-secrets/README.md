@@ -2,9 +2,9 @@
 
 ## This episode
 
-Last week you ran Postgres and Redis. Both had a password sitting in a plain Secret file in the repo, which was an acceptable stopgap for a week. Now you do it properly: take every password out of Git and into AWS Secrets Manager, then have the cluster pull it in at runtime so no secret is ever committed.
+Last week we covered Postgres and Redis. Both had a password sitting in a plain Secret file in the repo, which was an acceptable stopgap for a week. Now you do it properly: take every password out of Git and into AWS Secrets Manager, then have the cluster pull it in at runtime so no secret is ever committed.
 
-This delivers the project line:
+This is covered by the project line:
 
 > Secrets come from AWS Secrets Manager, nothing sensitive is committed to Git.
 
@@ -150,5 +150,3 @@ Skip what you know.
 - **refreshInterval**: how often the operator rechecks the source and updates the Secret.
 - **IRSA**: giving a pod its own AWS role through the cluster OIDC provider, from EP6. The operator uses one.
 - **Rotation**: changing a secret's value at the source. With this setup the cluster picks up the new value on its own.
-
-See you in episode 9, where the platform gets a front door: Traefik ingress on an AWS load balancer.
