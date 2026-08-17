@@ -86,14 +86,25 @@ The busybox pod was just a proof. Now run the actual EP7 Postgres StatefulSet, w
 ```bash
 kubectl apply -f manifests/postgres.yaml
 kubectl rollout status statefulset/postgres
-
-# log in with the password that came from Secrets Manager
-kubectl exec postgres-0 -- sh -c \
-  'PGPASSWORD=s3cr3t-from-localstack psql -U app -d app -tAc "select 1;"'
-# 1
 ```
 
-Postgres came up and accepts that password. The password was never written into a manifest. It travelled from LocalStack Secrets Manager, through the operator, into the Secret the StatefulSet mounts.
+Now prove the password really is the one from Secrets Manager. Connect from a **second pod** rather than with `kubectl exec` into Postgres itself, because Postgres trusts connections from its own localhost with no password, so an in-pod `psql` would pass whatever you typed. A connection from another pod hits the real password check:
+
+```bash
+# the right password gets in
+kubectl run pgcheck --image=postgres:18 --rm -it --restart=Never \
+  --env=PGPASSWORD=s3cr3t-from-localstack \
+  --command -- psql -h postgres -U app -d app -tAc "select 'connected'"
+# connected
+
+# a wrong password is refused
+kubectl run pgbad --image=postgres:18 --rm -it --restart=Never \
+  --env=PGPASSWORD=wrong \
+  --command -- psql -h postgres -U app -d app -tAc "select 1"
+# psql: error: ... password authentication failed for user "app"
+```
+
+Postgres came up and accepts only the real password. That password was never written into a manifest. It travelled from LocalStack Secrets Manager, through the operator, into the Secret the StatefulSet mounts.
 
 ## 7. Rotate it and watch the cluster follow
 
