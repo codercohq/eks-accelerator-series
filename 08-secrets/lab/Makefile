@@ -42,8 +42,7 @@ sync: ## apply the SecretStore + ExternalSecret and watch the operator build the
 	@$(MAKE) -s show
 
 show: ## print the Kubernetes Secret the operator built (decoded)
-	@echo -n "synced POSTGRES_PASSWORD: "
-	@kubectl get secret postgres -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d ; echo
+	@echo "synced POSTGRES_PASSWORD: $$(kubectl get secret postgres -o jsonpath='{.data.POSTGRES_PASSWORD}' | base64 -d)"
 
 db: ## run Postgres on the synced Secret, then prove the password from another pod
 	kubectl apply -f manifests/postgres.yaml
@@ -55,8 +54,8 @@ prove: ## check the DB password from a second pod (right works, wrong is refused
 	@kubectl run pw-ok  --image=postgres:18 --restart=Never --env=PGPASSWORD=$(INIT_PW) --command -- sh -c 'psql -h postgres -U app -d app -tAc "select 1" 2>&1; true' >/dev/null
 	@kubectl run pw-bad --image=postgres:18 --restart=Never --env=PGPASSWORD=nope --command -- sh -c 'psql -h postgres -U app -d app -tAc "select 1" 2>&1; true' >/dev/null
 	@kubectl wait --for=jsonpath='{.status.phase}'=Succeeded pod/pw-ok pod/pw-bad --timeout=90s >/dev/null 2>&1 || true
-	@echo -n "  right password ($(INIT_PW)) -> "; kubectl logs pw-ok | grep -iE '^1$$|failed' | head -1
-	@echo -n "  wrong password (nope)               -> "; kubectl logs pw-bad | grep -ioE 'password authentication failed' | head -1
+	@echo "  right password ($(INIT_PW)) -> $$(kubectl logs pw-ok | grep -iE '^1$$|failed' | head -1)"
+	@echo "  wrong password (nope)       -> $$(kubectl logs pw-bad | grep -ioE 'password authentication failed' | head -1)"
 	@kubectl delete pod pw-ok pw-bad --ignore-not-found >/dev/null 2>&1 || true
 
 rotate: ## rotate the password at the source and watch the Secret follow
@@ -89,12 +88,13 @@ demo: up sync db ## run the whole happy path for a rehearsal (up, sync, db)
 	@echo ""
 	@echo "happy path done. now try: make rotate | make break | make status | make down"
 
-test: ## end-to-end check: build, sync, boot the DB, prove the password, rotate
+test: ## ONE command end to end: build, sync, boot DB, prove password, rotate, tear down
 	@$(MAKE) up
 	@$(MAKE) sync
 	@$(MAKE) db
 	@$(MAKE) rotate
 	@echo ""
-	@echo "=== end-to-end check complete. tear down with: make down ==="
+	@echo "=== end-to-end PASSED, tearing down ==="
+	@$(MAKE) down
 
 .PHONY: help up down secret sync show db prove rotate break logs status demo test
