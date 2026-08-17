@@ -14,13 +14,15 @@ if ! kind get clusters 2>/dev/null | grep -qx "$CLUSTER"; then
   kind create cluster --config kind-config.yaml
 fi
 
-echo "==> pre-pull postgres:18 into the cluster (so nothing stalls on stage)"
-docker pull -q postgres:18 >/dev/null
-kind load docker-image postgres:18 --name "$CLUSTER" >/dev/null 2>&1 || true
+echo "==> pre-load images into the cluster (so nothing stalls on stage)"
+for img in localstack/localstack:3 postgres:18 busybox:1.36; do
+  docker pull -q "$img" >/dev/null 2>&1 || true
+  kind load docker-image "$img" --name "$CLUSTER" >/dev/null 2>&1 || true
+done
 
 echo "==> LocalStack"
 kubectl apply -f localstack.yaml >/dev/null
-kubectl rollout status deploy/localstack --timeout=180s
+kubectl rollout status deploy/localstack --timeout=300s
 
 echo "==> seed the source secret (idempotent)"
 SECRET='{"username":"app","dbname":"app","password":"s3cr3t-from-localstack"}'
