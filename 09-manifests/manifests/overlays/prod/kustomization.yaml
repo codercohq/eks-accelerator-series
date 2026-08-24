@@ -1,0 +1,37 @@
+# Prod overlay. More replicas on the request-path services, real prod tag, an
+# HPA on the api-gateway and a PodDisruptionBudget so a node drain cannot take
+# every api-gateway pod at once. The base still never changes.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shop-prod
+
+resources:
+  - ../../base
+  - hpa.yaml
+  - pdb.yaml
+
+images:
+  - name: api-gateway
+    newName: 123456789012.dkr.ecr.eu-west-2.amazonaws.com/api-gateway
+    newTag: "1.4.0"
+  - name: order-service
+    newName: 123456789012.dkr.ecr.eu-west-2.amazonaws.com/order-service
+    newTag: "1.4.0"
+
+# start the busy services at three replicas. The HPA takes over from there.
+replicas:
+  - name: api-gateway
+    count: 3
+  - name: order-service
+    count: 3
+
+# prod asks for more headroom than the base default
+patches:
+  - target:
+      kind: Deployment
+      name: api-gateway
+    patch: |
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests/cpu
+        value: 250m

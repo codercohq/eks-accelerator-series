@@ -1,0 +1,20 @@
+# The base. Every service in its plainest form: one replica, probes, resource
+# requests and a shared ConfigMap. Overlays layer the per-environment changes on
+# top, so the base itself is never edited per environment.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+commonLabels:
+  part-of: shop
+
+resources:
+  - config.yaml
+  - api-gateway.yaml
+  - order-service.yaml
+  - inventory-service.yaml
+  - payment-service.yaml
+  - notification-service.yaml
+  - shipping-service.yaml
+  - dashboard-api.yaml
+  - worker.yaml
+  - scheduler.yaml

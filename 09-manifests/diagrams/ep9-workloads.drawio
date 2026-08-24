@@ -1,0 +1,28 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="Base and overlays" id="ep9-p1">
+    <mxGraphModel dx="900" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="base" value="base&#10;one definition per service:&#10;Deployment + Service&#10;probes + resource requests" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="1">
+          <mxGeometry x="80" y="160" width="240" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="dev" value="overlay: dev&#10;namespace shop-dev&#10;1 replica, debug logs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1">
+          <mxGeometry x="440" y="90" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="prod" value="overlay: prod&#10;namespace shop-prod&#10;3+ replicas, HPA, PDB, real tag" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1">
+          <mxGeometry x="440" y="250" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="hpa" value="HPA&#10;load up -> more pods&#10;load down -> fewer pods" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00" vertex="1" parent="1">
+          <mxGeometry x="800" y="250" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="note" value="The base describes each service once. Each environment is a thin overlay of differences on top, never a copy. In prod the HPA changes the replica count on its own as load moves." style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="80" y="380" width="940" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="patched by" style="endArrow=classic;html=1" edge="1" parent="1" source="base" target="dev"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" value="patched by" style="endArrow=classic;html=1" edge="1" parent="1" source="base" target="prod"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" value="scales" style="endArrow=classic;html=1" edge="1" parent="1" source="hpa" target="prod"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

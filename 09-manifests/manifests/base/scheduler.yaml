@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scheduler
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scheduler
+  template:
+    metadata:
+      labels:
+        app: scheduler
+    spec:
+      containers:
+        - name: app
+          image: scheduler:latest        # overlays set the real registry + tag
+          envFrom:
+            - configMapRef:
+                name: app-config
+          # requests are what the scheduler packs on. limits cap the noisy neighbour.
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          # no HTTP port, so use a process check for liveness.
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "pgrep app || exit 1"]
+            initialDelaySeconds: 15
+            periodSeconds: 20

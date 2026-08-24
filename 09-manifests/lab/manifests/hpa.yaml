@@ -1,0 +1,20 @@
+# Scale the api-gateway between 1 and 5 pods, aiming to keep average CPU near
+# 50% of the request. minReplicas is low so the scale-up is easy to watch live.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-gateway
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-gateway
+  minReplicas: 1
+  maxReplicas: 5
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50

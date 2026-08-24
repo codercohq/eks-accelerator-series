@@ -1,0 +1,11 @@
+# Keep at least two api-gateway pods during a voluntary disruption, like a node
+# drain, so the front of the app never drops to zero while nodes recycle.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-gateway
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: api-gateway

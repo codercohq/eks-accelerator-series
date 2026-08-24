@@ -1,0 +1,21 @@
+# The api-gateway scales on CPU in prod. Between three and ten pods, aiming to
+# keep average CPU near 60% of the request. Add HPAs for the other request-path
+# services the same way.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-gateway
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: api-gateway
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
