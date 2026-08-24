@@ -1,0 +1,28 @@
+# Dev overlay. Small and cheap: everything runs one replica, in the shop-dev
+# namespace, pointing at the dev image tag. The base is untouched.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: shop-dev
+
+resources:
+  - ../../base
+
+# stamp the real registry and the dev tag onto every image at once
+images:
+  - name: api-gateway
+    newName: 123456789012.dkr.ecr.eu-west-2.amazonaws.com/api-gateway
+    newTag: dev
+  - name: order-service
+    newName: 123456789012.dkr.ecr.eu-west-2.amazonaws.com/order-service
+    newTag: dev
+
+# dev turns the log level up. This merges into the base ConfigMap.
+patches:
+  - target:
+      kind: ConfigMap
+      name: app-config
+    patch: |
+      - op: replace
+        path: /data/LOG_LEVEL
+        value: debug

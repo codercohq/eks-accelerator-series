@@ -14,6 +14,7 @@ Each session is a single topic deep dive. The brief for the project is in [proje
 - [EP 6: Storage and Pod-level IAM](06-storage/README.md)
 - [EP 7: Postgres and Redis on StatefulSets](07-stateful/README.md)
 - [EP 8: Secrets](08-secrets/README.md)
+- [EP 9: Application manifests, probes and autoscaling](09-manifests/README.md)
 
 ## Platform snapshot
 
