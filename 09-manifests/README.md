@@ -2,30 +2,30 @@
 
 ## This episode
 
-You have a cluster with storage, secrets and identity, but the nine services are still running from whatever you hand-applied along the way. Tonight you give them a proper home: every service as a Deployment with health checks and resource requests, autoscaling on the busy ones, the whole set managed with Kustomize so dev and prod share one base.
+We have a cluster with storage, secrets and identity, but our nine services are still running from whatever we hand-applied along the way. In this episode we give them a proper home. Every service becomes a Deployment with health checks and resource requests, the busy ones get autoscaling, then we manage the whole set with Kustomize so dev and prod share one base.
 
 This delivers the project line:
 
 > All nine services run as Deployments, health-checked, resource-bounded and autoscaled, with per-environment config through Kustomize.
 
-> The line that carries the session: a Deployment tells Kubernetes what healthy looks like and how much the pod needs, then Kubernetes keeps it that way on its own.
+> A Deployment tells Kubernetes what healthy looks like and how much the pod needs, then Kubernetes keeps it that way on its own.
 
 ## Deployments, probes and resources, plainly
 
-New to this? Start here. Four ideas carry the night.
+New to this? Start here. Four ideas carry the session.
 
-**A Deployment keeps a set of identical pods running.** You say "I want three copies of api-gateway" and the Deployment makes it so. A pod dies, it makes another. You change the image, it rolls the pods over to the new version a few at a time. It is the standard way to run a stateless service.
+**A Deployment keeps a set of identical pods running.** We say "run three copies of api-gateway" and the Deployment makes it so. A pod dies, it makes another. We change the image, it rolls the pods over to the new version a few at a time. It is the standard way to run a stateless service.
 
-**A probe is a health check Kubernetes runs for you.** There are two that matter tonight:
+**A probe is a health check Kubernetes runs for us.** Two of them matter here:
 
 - A **readiness probe** answers "can this pod take traffic yet?". Until it passes, the pod gets no requests. This is how a slow-starting service avoids serving errors while it warms up.
 - A **liveness probe** answers "is this pod wedged?". If it fails, Kubernetes restarts the pod. This rescues a process that has hung but not crashed.
 
-**A resource request and a resource limit size the pod.** The **request** is what the pod is guaranteed, the number the scheduler uses to place the pod on a node. The **limit** is the ceiling it cannot cross. Requests keep the scheduler honest. Limits stop one greedy pod starving its neighbours.
+**A request and a limit size the pod.** The **request** is what the pod is guaranteed, the number the scheduler uses to place it on a node. The **limit** is the ceiling it cannot cross. Requests keep the scheduler honest. Limits stop one greedy pod starving its neighbours.
 
-**Autoscaling adds pods when the work grows.** A **HorizontalPodAutoscaler** watches a metric, usually CPU, then changes the replica count to keep that metric near a target. Traffic doubles, it adds pods. Traffic drops, it removes them. You set the rule once and it runs on its own.
+**Autoscaling adds pods when the work grows.** A **HorizontalPodAutoscaler** watches a metric, usually CPU, then changes the replica count to keep that metric near a target. Traffic doubles, it adds pods. Traffic drops, it removes them. We set the rule once and it runs on its own.
 
-## By the end of this, you will have:
+## What we end up with
 
 - Every service as a Deployment with a readiness probe, a liveness probe and resource requests.
 - A HorizontalPodAutoscaler on the request-path services.
@@ -34,10 +34,14 @@ New to this? Start here. Four ideas carry the night.
 
 ## Prerequisites
 
-- Your EP8 cluster, with the services and their secrets in place.
+- The EP8 cluster, with the services and their secrets in place.
 - metrics-server installed, which the HPA needs. The lab has the note to add it.
 
-> New to this? Warm up on the local lab in [`lab/`](lab/README.md) first. It runs a service, a probe, Service DNS and a real HPA scale-up on Kind, so you see autoscaling happen with no AWS account.
+> New to this? Warm up on the local lab in [`lab/`](lab/README.md) first. It runs a service, a probe, Service DNS and a real HPA scale-up on Kind, so we see autoscaling happen with no AWS account.
+
+## A quick word on Helm
+
+You have probably heard of Helm, so here is where it fits. We use Helm to install other people's software, like the operators from earlier episodes. We use Kustomize for our own services. Kustomize is plain YAML with small patches on top, no templating language to learn, plus it is what ArgoCD reads natively when we reach GitOps later. So the rule is simple: Helm for third-party charts, Kustomize for our apps.
 
 ## The problem
 
@@ -52,39 +56,39 @@ flowchart TB
   base --> prod
 ```
 
-Read one thing off this. The base describes each service once. Each environment is a thin layer of differences on top. You never copy a Deployment and edit it per environment.
+Read one thing off this. The base describes each service once. Each environment is a thin layer of differences on top. We never copy a Deployment and edit it per environment.
 
 ## 1. The Deployment, probes and resources
 
 Every service gets the same shape. A Deployment that runs the pod, a readiness probe so it only takes traffic when it is ready, a liveness probe so a hung pod is restarted, plus resource requests so the scheduler can place it. The request-path services also get a ClusterIP Service, which is the stable in-cluster name the others call.
 
-The one probe mistake to avoid is worth its own callout, because every cohort hits it.
+One probe mistake is worth calling out, because it turns a slow day into an outage.
 
-> **The pitfall that earns the mark on health checks.** A liveness probe must not depend on the database or another service. If it does, a slow database makes the probe fail, Kubernetes restarts the pod, the restart makes the database load worse, and now you have a restart storm that turns a slow day into an outage. Liveness checks the pod itself. Readiness can check dependencies, because a failed readiness only stops traffic, it does not restart anything.
+> **The pitfall that earns the mark on health checks.** A liveness probe must not depend on the database or another service. If it does, a slow database makes the probe fail, Kubernetes restarts the pod, the restart makes the database load worse. A restart storm follows. Liveness checks the pod itself. Readiness can check dependencies, because a failed readiness only stops traffic, it does not restart anything.
 
 ## 2. Requests, limits and the CPU-limit question
 
-Requests are easy: set them to what the service actually uses at rest, because that is what the scheduler reserves. Set memory requests and limits close together, since a pod over its memory limit is killed.
+Requests are easy. Set them to what the service uses at rest, because that is what the scheduler reserves. Set memory requests and limits close together, since a pod over its memory limit is killed.
 
-CPU is the interesting one. A memory limit protects you, a CPU limit often hurts you. CPU is compressible: a pod over its CPU request is simply throttled, not killed, so a CPU limit mostly just caps a service that could have used spare capacity for free. For this project set CPU requests on everything and leave CPU limits off, so a service can burst into idle CPU when it needs to.
+CPU is the interesting one. A memory limit protects us, a CPU limit often hurts us. CPU is compressible: a pod over its CPU request is throttled rather than killed, so a CPU limit mostly caps a service that could have used spare capacity for free. For this project we set CPU requests on everything and leave CPU limits off, so a service can burst into idle CPU when it needs to.
 
 ## 3. Autoscaling: HPA on CPU, KEDA on the queue
 
 The request-path services scale on CPU with a HorizontalPodAutoscaler. It reads CPU from metrics-server and keeps the average near a target, say 60%, adding and removing pods between a floor and a ceiling.
 
-The **worker** is different, and this is the callback to EP2. It pulls from an SQS queue, so when the backlog grows its CPU barely moves, which means CPU-based autoscaling never reacts. The right signal is the queue depth, and the tool that scales on it is **KEDA** (the callback lands in EP2's rule). You wire KEDA to the worker later in the series. Tonight, know that CPU is the wrong metric for a queue consumer and why.
+The **worker** is different, a callback to EP2. It pulls from an SQS queue, so when the backlog grows its CPU barely moves, which means CPU-based autoscaling never reacts. The right signal is the queue depth, so the tool that scales on it is **KEDA**. We wire KEDA to the worker later in the series. For now, the point is that CPU is the wrong metric for a queue consumer.
 
 > **The line that earns the mark on autoscaling.** Scale request-path services on CPU with an HPA. Scale the queue worker on backlog with KEDA, because an idle-looking consumer with a growing queue never trips a CPU threshold.
 
 ## 4. Kustomize: one base, thin overlays
 
-You have two environments and nine services. Copying eighteen sets of manifests and keeping them in step by hand is how drift starts. Kustomize fixes this: a **base** describes each service once, then an **overlay** per environment lists only the differences.
+We have two environments and nine services. Copying eighteen sets of manifests and keeping them in step by hand is how drift starts. Kustomize fixes this: a **base** describes each service once, then an **overlay** per environment lists only the differences.
 
 - The **base** has the Deployments, Services and a shared ConfigMap, all at sensible defaults.
 - The **dev overlay** sets the `shop-dev` namespace, one replica each and debug logging.
 - The **prod overlay** sets `shop-prod`, more replicas on the busy services, the real image tag, an HPA and a PodDisruptionBudget.
 
-You build an environment with one command and nothing is duplicated:
+We build an environment with one command and nothing is duplicated:
 
 ```bash
 kubectl kustomize manifests/overlays/dev     # or apply with: kubectl apply -k
@@ -96,7 +100,7 @@ An overlay is a patch rather than a copy. Change the base once and both environm
 ## Deep dive: deploy, reach, then scale under load
 
 ```bash
-# stand up three request-path services
+# stand up the dev environment
 kubectl apply -k manifests/overlays/dev
 kubectl get deploy,svc
 
@@ -107,7 +111,7 @@ kubectl run tmp --rm -it --image=busybox:1.36 --restart=Never -- \
 
 ### Now break it on purpose
 
-Put load on the api-gateway and watch the HPA react:
+We put load on the api-gateway and watch the HPA react:
 
 ```bash
 # drive CPU up
@@ -119,7 +123,7 @@ kubectl get hpa api-gateway -w
 kubectl delete -f lab/manifests/loadgen.yaml
 ```
 
-You never touched the replica count. The HPA did it, off a metric.
+We never touched the replica count. The HPA did it, off a metric.
 
 ## Pitfalls
 
@@ -145,13 +149,13 @@ Bring a cluster where `kubectl apply -k` stands up the dev environment and one s
 Skip what you know.
 
 - **Deployment**: keeps a set of identical pods running, rolling them over on a change.
-- **ReplicaSet**: the object a Deployment uses under the hood to hold the replica count. You rarely touch it.
+- **ReplicaSet**: the object a Deployment uses under the hood to hold the replica count. We rarely touch it.
 - **Readiness probe**: decides whether a pod may receive traffic. Failing it stops traffic, nothing more.
 - **Liveness probe**: decides whether a wedged pod should be restarted. Failing it restarts the pod.
 - **Resource request**: what a container is guaranteed, the number the scheduler places on.
 - **Resource limit**: the ceiling a container cannot cross. Over the memory limit is a kill, over the CPU limit is a throttle.
 - **HorizontalPodAutoscaler (HPA)**: changes the replica count to keep a metric, usually CPU, near a target.
-- **metrics-server**: the component that supplies CPU and memory readings the HPA needs.
+- **metrics-server**: the component that supplies the CPU and memory readings the HPA needs.
 - **KEDA**: an autoscaler that scales on external signals like queue depth. The right tool for the worker.
 - **Kustomize**: layers per-environment overlays on a shared base of manifests, with no templating.
 - **Overlay**: an environment's set of differences from the base.
