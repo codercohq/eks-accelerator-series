@@ -1,0 +1,16 @@
+# Lab Traefik. It runs on the node we labelled ingress-ready and binds the
+# node's ports 80 and 443 directly (hostPort), which the kind config forwards
+# to your laptop. On EKS you drop this and put an NLB in front instead.
+nodeSelector:
+  ingress-ready: "true"
+service:
+  type: ClusterIP
+ports:
+  web:
+    hostPort: 80
+  websecure:
+    hostPort: 443
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule

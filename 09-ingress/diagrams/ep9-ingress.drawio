@@ -1,0 +1,32 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="Ingress and NLB" id="ep9-p1">
+    <mxGraphModel dx="900" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="user" value="user on the internet" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="1">
+          <mxGeometry x="40" y="180" width="150" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nlb" value="AWS NLB&#10;layer 4, one stable address&#10;(does not read HTTP)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00" vertex="1" parent="1">
+          <mxGeometry x="260" y="170" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="traefik" value="Traefik&#10;layer 7, reads host + path&#10;(the ingress controller)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1">
+          <mxGeometry x="560" y="170" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="api" value="api-gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1">
+          <mxGeometry x="880" y="110" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="other" value="admin service" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1">
+          <mxGeometry x="880" y="260" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="note" value="One NLB takes all the traffic and forwards it cheaply. Traefik reads each request and picks the service from the Ingress rules. Delete a Traefik pod and the NLB address does not change, so the route comes back on its own." style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="40" y="360" width="1000" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" style="endArrow=classic;html=1" edge="1" parent="1" source="user" target="nlb"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" style="endArrow=classic;html=1" edge="1" parent="1" source="nlb" target="traefik"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" value="app.example.com" style="endArrow=classic;html=1" edge="1" parent="1" source="traefik" target="api"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" value="admin.example.com" style="endArrow=classic;html=1" edge="1" parent="1" source="traefik" target="other"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

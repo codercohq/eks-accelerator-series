@@ -1,0 +1,45 @@
+# Two tiny web apps so you can see the ingress route by hostname. Each just
+# returns its own name, standing in for the api-gateway and another service.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: shop, labels: {app: shop}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: shop}}
+  template:
+    metadata: {labels: {app: shop}}
+    spec:
+      containers:
+        - name: app
+          image: hashicorp/http-echo:1.0
+          args: ["-text=hello from SHOP (the api-gateway)"]
+          ports: [{containerPort: 5678}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: shop}
+spec:
+  selector: {app: shop}
+  ports: [{port: 80, targetPort: 5678}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: admin, labels: {app: admin}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: admin}}
+  template:
+    metadata: {labels: {app: admin}}
+    spec:
+      containers:
+        - name: app
+          image: hashicorp/http-echo:1.0
+          args: ["-text=hello from ADMIN"]
+          ports: [{containerPort: 5678}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: admin}
+spec:
+  selector: {app: admin}
+  ports: [{port: 80, targetPort: 5678}]
