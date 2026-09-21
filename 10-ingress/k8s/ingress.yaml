@@ -1,0 +1,27 @@
+# The real Ingress for the api-gateway. Three things happen off this one object:
+#   - Traefik routes app.example.com to the api-gateway Service
+#   - cert-manager issues a Let's Encrypt cert into app-tls (from the annotation)
+#   - ExternalDNS creates the Route 53 record for app.example.com (from the host)
+# Swap example.com for your own domain.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: api-gateway
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  tls:
+    - hosts:
+        - app.example.com
+      secretName: app-tls
+  rules:
+    - host: app.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 80

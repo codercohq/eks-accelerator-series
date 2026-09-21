@@ -1,0 +1,27 @@
+# The Ingress, with TLS. Two things make the certificate happen:
+#   - the cert-manager.io/cluster-issuer annotation names who issues it
+#   - the tls block names the hostname and the Secret to store the cert in
+# cert-manager sees this, issues a cert for shop.localhost from the lab CA and
+# writes it to the shop-tls Secret. Traefik then serves HTTPS with it.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shop
+  annotations:
+    cert-manager.io/cluster-issuer: lab-ca
+spec:
+  tls:
+    - hosts:
+        - shop.localhost
+      secretName: shop-tls
+  rules:
+    - host: shop.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: shop
+                port:
+                  number: 80

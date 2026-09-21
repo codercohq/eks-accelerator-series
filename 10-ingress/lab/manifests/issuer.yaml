@@ -1,0 +1,36 @@
+# A local certificate authority, standing in for Let's Encrypt.
+#
+# On EKS the ClusterIssuer talks to Let's Encrypt over ACME and proves you own
+# the domain with a Route 53 DNS-01 challenge. That needs a real domain, so it
+# cannot run on a laptop. Here we make our own tiny CA instead: cert-manager
+# still does the same job (issue a Certificate, put the cert in a Secret), the
+# only difference is who signs it. The mechanism is identical.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-root
+spec:
+  selfSigned: {}
+---
+# a self-signed root cert, kept in a Secret
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: lab-ca
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: lab-ca
+  secretName: lab-ca-key-pair
+  issuerRef:
+    name: selfsigned-root
+    kind: ClusterIssuer
+---
+# the CA issuer that signs app certs from that root, the way Let's Encrypt would
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: lab-ca
+spec:
+  ca:
+    secretName: lab-ca-key-pair

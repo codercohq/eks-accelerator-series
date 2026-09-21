@@ -1,0 +1,27 @@
+# Real-AWS Traefik. The Service is a LoadBalancer, and the annotations tell the
+# AWS Load Balancer Controller to make an internet-facing NLB with target-type
+# ip (straight at the Traefik pods through the VPC CNI). Plain HTTP redirects to
+# HTTPS at the entrypoint, so every service is HTTPS by default.
+service:
+  type: LoadBalancer
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: external
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+
+ports:
+  web:
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure: {}
+
+# spread across nodes so losing one does not drop all ingress
+deployment:
+  replicas: 2
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1

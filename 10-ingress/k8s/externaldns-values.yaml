@@ -1,0 +1,21 @@
+# ExternalDNS watches Ingress objects and writes the matching Route 53 records,
+# so you never click a DNS record by hand. It reaches Route 53 through its own
+# IRSA role (set the annotation from the terraform output).
+provider:
+  name: aws
+
+# only manage records in our zone, and only ones ExternalDNS created (txt owner)
+domainFilters:
+  - example.com
+policy: sync
+txtOwnerId: eks-accel-dev
+registry: txt
+
+# watch Ingress objects (and Services) for hostnames to publish
+sources:
+  - ingress
+  - service
+
+serviceAccount:
+  annotations:
+    eks.amazonaws.com/role-arn: REPLACE_WITH_EXTERNALDNS_ROLE_ARN
