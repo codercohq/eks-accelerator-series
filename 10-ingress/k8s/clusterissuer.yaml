@@ -1,0 +1,23 @@
+# The real issuer. It talks to Let's Encrypt over ACME and proves we own the
+# domain with a Route 53 DNS-01 challenge. cert-manager reaches Route 53 through
+# its own IRSA role, the one the terraform module creates. No keys.
+#
+# Start with the staging server while you test, because production Let's Encrypt
+# has strict rate limits and you do not want to burn them on a typo. Swap to the
+# production server (commented below) once staging issues cleanly.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    # server: https://acme-v02.api.letsencrypt.org/directory   # production
+    email: platform@example.com
+    privateKeySecretRef:
+      name: letsencrypt-account-key
+    solvers:
+      - dns01:
+          route53:
+            region: eu-west-2
+            # no accessKeyID/secretKey: cert-manager uses its IRSA role

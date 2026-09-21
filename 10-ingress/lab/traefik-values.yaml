@@ -1,0 +1,29 @@
+# Lab Traefik. Runs on the ingress-ready node and binds host ports 80 and 443,
+# which the kind config forwards to your laptop. On EKS you drop this and put an
+# NLB in front instead.
+nodeSelector:
+  ingress-ready: "true"
+# Traefik binds host ports 80/443 here, so two pods cannot run at once during an
+# upgrade. Recreate stops the old pod before starting the new one. On EKS this is
+# not needed, because there Traefik sits behind a Service, not on host ports.
+updateStrategy:
+  type: Recreate
+  rollingUpdate: null
+service:
+  type: ClusterIP
+ports:
+  web:
+    hostPort: 80
+    # send every plain-HTTP request straight to HTTPS
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    hostPort: 443
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
