@@ -2,7 +2,7 @@
 
 ## This episode
 
-Everything runs inside the cluster and only talks to itself. In this episode we give the platform a real front door. A user types `https://app.<our-domain>`, gets a valid certificate and reaches the api-gateway, with plain HTTP bounced up to HTTPS. This is the first time the platform is reachable from the internet, with a real name and a padlock.
+Everything runs inside the cluster and only talks to itself. In this episode we give the platform a real front door. A user types `https://app.<our-domain>`, gets a valid certificate and reaches the api-gateway, with plain HTTP redirected to HTTPS. This is the first time the platform is reachable from the internet, with a real name and a padlock.
 
 This delivers the project line:
 
@@ -21,7 +21,7 @@ New to this? Start here. Four jobs have to happen for `https://app.example.com` 
 
 The neat part: we describe all of this with **one Ingress object**. Traefik reads it to route, cert-manager reads it to get the cert, ExternalDNS reads it to make the record. We write the rule once, the controllers do the rest.
 
-## By the end of this, you will have:
+## What we end up with
 
 - Traefik as the ingress controller, behind an NLB, giving one public address.
 - cert-manager issuing a Let's Encrypt certificate, renewed automatically.
@@ -40,19 +40,14 @@ The neat part: we describe all of this with **one Ingress object**. Traefik read
 
 ```mermaid
 flowchart LR
-  user["user<br/>https://app.example.com"]
-  dns["Route 53<br/>(ExternalDNS writes it)"]
-  nlb["AWS NLB"]
-  traefik["Traefik<br/>+ cert from cert-manager"]
-  api["api-gateway"]
-  user -->|looks up name| dns
-  user --> nlb --> traefik --> api
+  user["user<br/>https://app.example.com"] --> nlb["AWS NLB"]
+  nlb --> traefik["Traefik"] --> api["api-gateway"]
   ing["one Ingress object"] -.read by.-> traefik
-  ing -.read by.-> dns
-  ing -.read by.-> traefik
+  ing -.read by.-> cm["cert-manager<br/>(issues the cert)"]
+  ing -.read by.-> edns["ExternalDNS<br/>(writes the Route 53 record)"]
 ```
 
-Read one thing off this. The Ingress object is the single source. Three controllers watch it and each does its own job, so we never wire DNS, certs and routing separately.
+Read one thing off this. The top row is the request path: a user reaches the api-gateway through the NLB and Traefik. Underneath, the one Ingress object is read by three controllers, each doing its own job, so we never wire routing, certs and DNS separately.
 
 ## 1. Traefik behind an NLB
 
@@ -62,10 +57,10 @@ Same as the ingress you already know. Traefik runs as pods and does the layer-7 
 
 ## 2. cert-manager and the DNS-01 challenge
 
-cert-manager gets certificates from Let's Encrypt, for free, then renews them on its own before they expire. To hand you a certificate, Let's Encrypt first makes you prove you own the domain. That proof is a **challenge**. There are two kinds:
+cert-manager gets certificates from Let's Encrypt, for free, then renews them on its own before they expire. To hand us a certificate, Let's Encrypt first makes us prove we own the domain. That proof is a **challenge**. There are two kinds:
 
-- **HTTP-01** puts a token at a URL on your site. Simple, but it needs the site already reachable on port 80, and it cannot do wildcards.
-- **DNS-01** puts a token in a DNS TXT record. It works before the site is public and it can issue wildcards, at the cost of letting cert-manager write to your DNS.
+- **HTTP-01** puts a token at a URL on the site. Simple, but it needs the site already reachable on port 80, and it cannot do wildcards.
+- **DNS-01** puts a token in a DNS TXT record. It works before the site is public and it can issue wildcards, at the cost of letting cert-manager write to our DNS.
 
 We use **DNS-01**, because it issues before anything is live and it handles a wildcard if we want one. cert-manager writes the TXT record into Route 53 through its own IRSA role, the same identity pattern as EP6 and EP8. No keys.
 
@@ -73,7 +68,7 @@ We use **DNS-01**, because it issues before anything is live and it handles a wi
 
 ## 3. ExternalDNS makes the record
 
-Left alone, you would create the DNS record by hand every time a hostname changes. ExternalDNS does it for you: it watches Ingress objects, reads the hostnames, then creates and updates the matching Route 53 records. Point an Ingress at `app.example.com` and the record appears. It reaches Route 53 through its own IRSA role too. A TXT owner record marks the records it owns, so it never touches ones you made by hand.
+Without it, we would create the DNS record by hand every time a hostname changes. ExternalDNS does it for us: it watches Ingress objects, reads the hostnames, then creates and updates the matching Route 53 records. Point an Ingress at `app.example.com` and the record appears. It reaches Route 53 through its own IRSA role too. A TXT owner record marks the records it owns, so it never touches ones you made by hand.
 
 ## 4. One Ingress ties it together
 
