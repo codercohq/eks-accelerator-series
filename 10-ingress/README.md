@@ -2,17 +2,17 @@
 
 ## This episode
 
-Everything runs inside the cluster and only talks to itself. In this episode we give the platform a real front door. A user types `https://app.<our-domain>`, gets a valid certificate and reaches the api-gateway, with plain HTTP redirected to HTTPS. This is the first time the platform is reachable from the internet, with a real name and a padlock.
+Everything runs inside the cluster and only talks to itself. In this episode we give the platform a front door. A user types `https://app.<our-domain>`, gets a valid certificate and reaches the api-gateway, with plain HTTP redirected to HTTPS. This is the first time the platform is reachable from the internet, with a real name and a padlock.
 
-This delivers the project line:
+This delivers the project task:
 
 > The platform is reachable at `https://app.<domain>` with a valid certificate, HTTP redirects to HTTPS, DNS managed automatically.
 
 > Four pieces do this: Traefik routes the traffic, an NLB is the public address, cert-manager gets the certificate, ExternalDNS makes the DNS record. One Ingress object drives all four.
 
-## The front door, plainly
+## The front door
 
-New to this? Start here. Four jobs have to happen for `https://app.example.com` to work, each with its own tool.
+4 things have to happen for `https://app.example.com` to work, each with its own tool.
 
 - **Get traffic into the cluster.** A load balancer with a stable public address. We use an **NLB**, then inside the cluster **Traefik** routes each request to the right service. This is the ingress part.
 - **Give it a name.** A DNS record so `app.example.com` points at that load balancer. **ExternalDNS** writes it into Route 53 for us.
@@ -70,11 +70,11 @@ We use **DNS-01**, because it issues before anything is live and it handles a wi
 
 Without it, we would create the DNS record by hand every time a hostname changes. ExternalDNS does it for us: it watches Ingress objects, reads the hostnames, then creates and updates the matching Route 53 records. Point an Ingress at `app.example.com` and the record appears. It reaches Route 53 through its own IRSA role too. A TXT owner record marks the records it owns, so it never touches ones you made by hand.
 
-## 4. One Ingress ties it together
+## 4. One Ingress puts it together
 
 The Ingress carries three things: the host, a TLS block naming the certificate Secret, plus the `cert-manager.io/cluster-issuer` annotation. From that one object, Traefik routes `app.example.com`, cert-manager issues `app-tls`, ExternalDNS publishes the record. The plain-HTTP-to-HTTPS redirect lives once in the Traefik config, so every service is HTTPS by default.
 
-## Deep dive: watch it come together, then break it
+## Hands on
 
 ```bash
 # apply the one Ingress
