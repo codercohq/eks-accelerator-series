@@ -101,6 +101,38 @@ kubectl describe certificaterequest | tail
 
 The certificate never issues, because the identity was wrong. That is least privilege again: each controller can only touch the one zone its role allows.
 
+## Where this is heading: the Gateway API (read after the session)
+
+We used Ingress because every cluster supports it and it is the simplest thing that works. Its successor is the **Gateway API**, a newer set of objects that went stable in 2023. It is worth knowing where the field is going. The push towards it is real now that ingress-nginx, the most common Ingress controller, is being retired.
+
+Here is the shape. Instead of one Ingress object, the Gateway API uses three:
+
+```mermaid
+flowchart TB
+  gc["GatewayClass<br/>(which controller, set once)"]
+  gw["Gateway<br/>(the entry point: ports, TLS)<br/>owned by the platform team"]
+  r1["HTTPRoute: app<br/>owned by the app team"]
+  r2["HTTPRoute: admin<br/>owned by another team"]
+  svc1["api-gateway"]
+  svc2["admin"]
+  gc --> gw
+  gw --> r1 --> svc1
+  gw --> r2 --> svc2
+```
+
+Read two things off it. One **Gateway** is the shared entry point. Each team attaches its own **HTTPRoute** to it, so nobody edits one giant shared object.
+
+### Why it improves on an Ingress controller
+
+- **It splits the one object by who owns it.** An Ingress mixes the entry point and the routing in a single object that everyone edits. The Gateway API splits them: the platform team owns the **Gateway** (the ports, the TLS, the load balancer), while each app team owns its own **HTTPRoute**. Clear ownership, no shared file to fight over.
+- **The features live in the spec itself, rather than in annotations.** Anything past basic host and path routing, like splitting traffic for a canary or matching on a header, had to go into controller-specific annotations on an Ingress. Every controller invented its own, so nothing was portable. In the Gateway API these are proper typed fields, the same on any controller.
+- **It routes more than HTTP.** The same model handles TCP, UDP and gRPC. It even extends to service-mesh traffic inside the cluster, so its reach goes beyond the traffic arriving from outside.
+- **It is portable.** Because the features are standard, moving from one controller to another is a real option rather than rewriting a wall of annotations.
+
+The good news for us: **Traefik already speaks the Gateway API**, so this is a change of objects rather than a change of tool. Other implementations you will hear about are **Envoy Gateway** (the Gateway API built on the Envoy proxy, the same proxy under Istio), plus Istio and Cilium.
+
+When to reach for it: Ingress is still the right baseline for a simple front door like ours. Gateway API earns its keep in bigger setups where many teams share one entry point or where you need canary traffic splitting and header routing without controller-specific annotations.
+
 ## Pitfalls
 
 - **Using ingress-nginx.** It is being retired. Pick Traefik.
@@ -136,5 +168,7 @@ Skip what you know.
 - **Route 53**: AWS's DNS service.
 - **HTTP-to-HTTPS redirect**: bouncing plain HTTP up to HTTPS so nothing is served in the clear.
 - **IRSA**: a pod assuming its own AWS role through the cluster OIDC provider. cert-manager and ExternalDNS each use one.
+- **Gateway API**: the successor to Ingress. Splits routing into a Gateway (the entry point) and HTTPRoutes (per-app rules), with features in the spec rather than annotations.
+- **Envoy Gateway**: a Gateway API implementation built on the Envoy proxy.
 
 See you in episode 11, where we wire the asynchronous spine: the SQS queue, its dead-letter queue and the worker that drains it.

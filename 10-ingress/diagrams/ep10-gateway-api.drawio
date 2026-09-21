@@ -1,0 +1,50 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="Ingress vs Gateway API" id="ep10-gw">
+    <mxGraphModel dx="900" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="t1" value="Ingress (one object, everyone edits it)" style="text;html=1;align=left;fontStyle=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="360" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="ing" value="Ingress&#10;host + path + TLS + annotations" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450" vertex="1" parent="1">
+          <mxGeometry x="40" y="70" width="260" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="isvc1" value="api-gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1">
+          <mxGeometry x="120" y="180" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ie1" style="endArrow=classic;html=1" edge="1" parent="1" source="ing" target="isvc1"><mxGeometry relative="1" as="geometry" /></mxCell>
+
+        <mxCell id="t2" value="Gateway API (split by who owns it)" style="text;html=1;align=left;fontStyle=1;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="560" y="40" width="360" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="gc" value="GatewayClass&#10;(which controller, set once)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="1">
+          <mxGeometry x="560" y="70" width="220" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="gw" value="Gateway&#10;entry point: ports, TLS&#10;(platform team owns this)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="1">
+          <mxGeometry x="560" y="150" width="220" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" value="HTTPRoute: app&#10;(app team owns this)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656" vertex="1" parent="1">
+          <mxGeometry x="470" y="270" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="HTTPRoute: admin&#10;(another team owns this)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656" vertex="1" parent="1">
+          <mxGeometry x="700" y="270" width="180" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="gsvc1" value="api-gateway" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1">
+          <mxGeometry x="490" y="380" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="gsvc2" value="admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1">
+          <mxGeometry x="730" y="380" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="ge0" style="endArrow=classic;html=1" edge="1" parent="1" source="gc" target="gw"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ge1" value="attaches" style="endArrow=classic;html=1" edge="1" parent="1" source="gw" target="r1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ge2" value="attaches" style="endArrow=classic;html=1" edge="1" parent="1" source="gw" target="r2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ge3" style="endArrow=classic;html=1" edge="1" parent="1" source="r1" target="gsvc1"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="ge4" style="endArrow=classic;html=1" edge="1" parent="1" source="r2" target="gsvc2"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="note" value="Ingress puts routing, TLS and every extra feature (as annotations) into one object everyone shares. The Gateway API splits it: the platform team owns the Gateway, each app team owns its own HTTPRoute, and features are typed fields rather than annotations." style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="40" y="450" width="840" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
