@@ -135,7 +135,7 @@ When to reach for it: Ingress is still the right baseline for a simple front doo
 
 ## Pitfalls
 
-- **Using ingress-nginx.** It is being retired. Pick Traefik.
+- **Using ingress-nginx.** It is deprecated. Use Traefik.
 - **No public-subnet tags.** Without the EP3 `kubernetes.io/role/elb` tags, the NLB has nowhere to land and the Traefik Service sits `<pending>`. The commonest front-door bug, and it traces back to EP3.
 - **Testing against Let's Encrypt production.** Production has strict rate limits, so a config typo can lock you out for a week. Issue against the staging server first, then switch to production once it works.
 - **cert-manager or ExternalDNS with no IRSA role.** The DNS-01 challenge or the record write fails with `AccessDenied`. Give each its own role scoped to the zone.
@@ -150,11 +150,11 @@ When to reach for it: Ingress is still the right baseline for a simple front doo
 4. **Apply one Ingress** for the api-gateway and watch the certificate issue and the Route 53 record appear.
 5. **Reach `https://app.<your-domain>`** with a valid certificate, then show plain HTTP redirecting to it.
 
+Bonus: Play around with the gateway API.
+
 Bring a browser open on `https://app.<your-domain>` with a valid padlock. Write the paragraph for your project README on why DNS-01 over IRSA rather than static keys. That paragraph is the artefact the live review grades.
 
 ## Appendix A: CoderCo's Technical Vocab (CTV) Dictionary
-
-Skip what you know.
 
 - **Ingress**: routing rules for HTTP traffic entering the cluster, by hostname and path.
 - **Ingress controller**: the program that reads Ingress rules and routes the traffic. Traefik here.
@@ -170,5 +170,3 @@ Skip what you know.
 - **IRSA**: a pod assuming its own AWS role through the cluster OIDC provider. cert-manager and ExternalDNS each use one.
 - **Gateway API**: the successor to Ingress. Splits routing into a Gateway (the entry point) and HTTPRoutes (per-app rules), with features in the spec rather than annotations.
 - **Envoy Gateway**: a Gateway API implementation built on the Envoy proxy.
-
-See you in episode 11, where we wire the asynchronous spine: the SQS queue, its dead-letter queue and the worker that drains it.
