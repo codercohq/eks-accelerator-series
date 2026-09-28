@@ -4,7 +4,7 @@
 
 The order flow has been synchronous so far: a request comes in, one service does the work and answers. That breaks down once an order needs several services to react, some of them slow. In this episode we add the async spine the app was built for. Orders go onto an SQS queue and a worker drains it. Anything the worker cannot handle ends up in a dead-letter queue instead of blocking everything behind it.
 
-This delivers the project line:
+This covers the project task:
 
 > An SQS queue is the event bus, with a dead-letter queue for messages that fail, and the worker consumes it through its own least-privilege role.
 
