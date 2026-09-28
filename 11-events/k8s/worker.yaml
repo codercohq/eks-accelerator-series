@@ -1,0 +1,49 @@
+# The real worker. Same loop as the lab, with two changes: it reaches SQS
+# through its IRSA role (the service account annotation), so there are no keys,
+# and QUEUE_URL is the real queue from the terraform output. Swap the image for
+# your own worker build.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: worker
+  annotations:
+    # from terraform: terraform output worker_role_arn
+    eks.amazonaws.com/role-arn: REPLACE_WITH_WORKER_ROLE_ARN
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  labels:
+    app: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      serviceAccountName: worker
+      containers:
+        - name: worker
+          image: REPLACE_WITH_YOUR_WORKER_IMAGE
+          env:
+            - name: AWS_REGION
+              value: eu-west-2
+            # from terraform: terraform output queue_url
+            - name: QUEUE_URL
+              value: REPLACE_WITH_QUEUE_URL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              memory: 256Mi
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "pgrep worker || exit 1"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
