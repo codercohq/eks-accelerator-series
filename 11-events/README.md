@@ -22,7 +22,7 @@ New to this? Start here.
 
 **Some messages cannot be handled.** A malformed order, a bug that trips on one record. If the worker keeps failing on the same message, it blocks everything behind it. A **dead-letter queue** (DLQ) is where those bad messages go after a few tries, so the worker can get on with the rest.
 
-So the shape is: producers send to the queue, the worker consumes, then anything that keeps failing drops into the DLQ for someone to look at later.
+So the idea is: producers send to the queue, the worker consumes, then anything that keeps failing drops into the DLQ for someone to look at later.
 
 ## What we end up with
 
