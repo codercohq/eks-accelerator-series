@@ -16,6 +16,7 @@ Each session is a single topic deep dive. The brief for the project is in [proje
 - [EP 8: Secrets](08-secrets/README.md)
 - [EP 9: Application manifests, probes and autoscaling](09-manifests/README.md)
 - [EP 10: Ingress, DNS and HTTPS](10-ingress/README.md)
+- [EP 11: The event bus](11-events/README.md)
 
 ## Platform snapshot
 

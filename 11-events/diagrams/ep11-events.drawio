@@ -1,0 +1,32 @@
+<mxfile host="app.diagrams.net" type="device">
+  <diagram name="Event bus" id="ep11-p1">
+    <mxGraphModel dx="900" dy="600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="826" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="prod" value="order-service&#10;(producer)&#10;own role: SendMessage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf" vertex="1" parent="1">
+          <mxGeometry x="40" y="180" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="q" value="SQS: order-events&#10;(the queue)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00" vertex="1" parent="1">
+          <mxGeometry x="320" y="180" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="worker" value="worker&#10;(consumer)&#10;own role: Receive + Delete" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="1">
+          <mxGeometry x="600" y="180" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="dlq" value="SQS: order-events-dlq&#10;(dead-letter queue)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450" vertex="1" parent="1">
+          <mxGeometry x="320" y="330" width="200" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="alarm" value="CloudWatch alarm&#10;(fires when the DLQ is not empty)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6" vertex="1" parent="1">
+          <mxGeometry x="600" y="335" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="note" value="The producer and the worker never talk directly. The queue sits between them, so either side can be slow or restart without breaking the other. A message that fails too many times moves to the DLQ, and the alarm makes that loud. Each service holds only the SQS actions it uses." style="text;html=1;align=left;verticalAlign=top;whiteSpace=wrap;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="40" y="430" width="780" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="SendMessage" style="endArrow=classic;html=1" edge="1" parent="1" source="prod" target="q"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e2" value="Receive" style="endArrow=classic;html=1" edge="1" parent="1" source="q" target="worker"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e3" value="fails too many times" style="endArrow=classic;html=1;dashed=1;strokeColor=#b85450" edge="1" parent="1" source="q" target="dlq"><mxGeometry relative="1" as="geometry" /></mxCell>
+        <mxCell id="e4" style="endArrow=classic;html=1;dashed=1;strokeColor=#9673a6" edge="1" parent="1" source="dlq" target="alarm"><mxGeometry relative="1" as="geometry" /></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

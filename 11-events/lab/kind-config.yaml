@@ -1,0 +1,8 @@
+# One control-plane and one worker is plenty. The queue work has no AZ or
+# multi-node story, so the cluster stays small.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: events-lab
+nodes:
+  - role: control-plane
+  - role: worker

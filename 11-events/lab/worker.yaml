@@ -1,0 +1,61 @@
+# A small stand-in for the real worker. It long-polls the queue, prints what it
+# gets, deletes good messages and deliberately fails on anything with "bad" in
+# it (by not deleting it). A failed message becomes visible again after the
+# visibility timeout, and once it has been received too many times SQS moves it
+# to the dead-letter queue on its own.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  labels:
+    app: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: amazon/aws-cli:2.15.30
+          env:
+            # point the AWS CLI at LocalStack. On EKS you drop these and the
+            # worker reaches real SQS through its IRSA role.
+            - name: AWS_ENDPOINT_URL
+              value: http://localstack:4566
+            - name: AWS_DEFAULT_REGION
+              value: us-east-1
+            - name: AWS_ACCESS_KEY_ID
+              value: test
+            - name: AWS_SECRET_ACCESS_KEY
+              value: test
+            - name: QUEUE_URL
+              value: http://localstack:4566/000000000000/order-events
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "worker up, polling $QUEUE_URL"
+              while true; do
+                LINE=$(aws sqs receive-message \
+                  --queue-url "$QUEUE_URL" \
+                  --wait-time-seconds 5 \
+                  --max-number-of-messages 1 \
+                  --query 'Messages[0].[Body,ReceiptHandle]' \
+                  --output text 2>/dev/null)
+                if [ -z "$LINE" ] || [ "$LINE" = "None" ]; then
+                  continue
+                fi
+                BODY=$(printf '%s' "$LINE" | cut -f1)
+                RH=$(printf '%s' "$LINE" | cut -f2)
+                if printf '%s' "$BODY" | grep -q bad; then
+                  echo "FAILED to process: $BODY  (leaving it for retry)"
+                else
+                  echo "processed: $BODY"
+                  aws sqs delete-message --queue-url "$QUEUE_URL" --receipt-handle "$RH" >/dev/null 2>&1
+                fi
+              done
