@@ -7,13 +7,13 @@ Eleven sessions take a nine-service Go application from a laptop to a secure, au
 | # | Session | Ships | Key technical point |
 |---|---|---|---|
 | 1 | Foundations | docker compose + kind, the core objects (Pod, Deployment, Service, StatefulSet) | The async path is stubbed, so the work is the platform rather than the app. |
-| 2 | Containers | multi-stage Dockerfile per service, small images, health endpoints, ECR | A queue worker scales on backlog, not CPU. |
+| 2 | Containers | multi-stage Dockerfile per service, small images, health endpoints, ECR | A queue worker scales on backlog depth rather than CPU. |
 | 3 | Networking | own VPC module, 3 AZs, `/24` public and `/19` private subnets, subnet discovery tags | Max-pods is an ENI/IP limit, `(3 x 9) + 2 = 29` on an m5.large. NAT versus VPC endpoints is a cost decision. |
 | 4 | The cluster | EKS (1.33+) with managed node groups, core addons, access entries, kubeconfig | Control plane is $0.10/hour. The bootstrap node group is plumbing for system pods, Karpenter owns the rest. The EBS driver is left on a borrowed node role on purpose. |
 | 5 | Karpenter | own Karpenter module, NodePool and EC2NodeClass | Controller on Pod Identity. Spot with an interruption queue. Consolidation trades cost against churn. |
 | 6 | Storage and identity | gp3 default and gp3-retain StorageClasses, EBS CSI on its own IRSA role, first snapshot objects | `WaitForFirstConsumer` puts the zonal volume in the pod's AZ. The EP4 node-role shortcut comes off. |
 | 7 | Postgres and Redis | Postgres and Valkey StatefulSets, headless Services, volumeClaimTemplates | Valkey over Redis after the licence change. Bitnami images no longer pull. The AZ-pinning problem: a pod is welded to its volume's AZ. |
-| 8 | Secrets | External Secrets Operator, SecretStore and ExternalSecret, operator IRSA role | A Kubernetes Secret is base64, not encryption. Source values live in Secrets Manager. |
+| 8 | Secrets | External Secrets Operator, SecretStore and ExternalSecret, operator IRSA role | A Kubernetes Secret is base64 encoded, which is encoding rather than encryption. Source values live in Secrets Manager. |
 | 9 | Manifests and autoscaling | nine Deployments with probes and resource requests, HPA, Kustomize base and overlays | Never put a dependency on a liveness probe. HPA on CPU for request-path services, KEDA on queue depth for the worker. |
 | 10 | Ingress, DNS and HTTPS | Traefik behind an NLB, cert-manager with Let's Encrypt DNS-01, ExternalDNS | One Ingress drives routing, the certificate and the DNS record. HTTP redirects to HTTPS. ingress-nginx is retired, Gateway API is next. |
 | 11 | The event bus | SQS queue and dead-letter queue with a redrive policy, worker IRSA role, DLQ CloudWatch alarm | Standard SQS is at-least-once, so handlers must be idempotent. The redrive policy parks a poison message after N tries. |
