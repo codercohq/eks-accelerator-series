@@ -1,6 +1,8 @@
 # EKS Accelerator Series: summary and project completion guide
 
-Eleven sessions take a nine-service Go application from a laptop to a secure, autoscaling platform on EKS. Each session ships one piece the platform needs and builds on the last. This file summarises what was built and what you still have to build to finish the capstone.
+10+ sessions take a multi-service Go application to deploying it on EKS. Each session goes through one the platform needs and builds on the last. 
+
+This sessions summarises what was built and what you still have to build to finish this project.
 
 ## The episodes
 
@@ -18,7 +20,7 @@ Eleven sessions take a nine-service Go application from a laptop to a secure, au
 | 10 | Ingress, DNS and HTTPS | Traefik behind an NLB, cert-manager with Let's Encrypt DNS-01, ExternalDNS | One Ingress drives routing, the certificate and the DNS record. HTTP redirects to HTTPS. ingress-nginx is retired, Gateway API is next. |
 | 11 | The event bus | SQS queue and dead-letter queue with a redrive policy, worker IRSA role, DLQ CloudWatch alarm | Standard SQS is at-least-once, so handlers must be idempotent. The redrive policy parks a poison message after N tries. |
 
-## Patterns that run through the build
+## Common patterns to note
 
 - **Own Terraform modules.** Every infrastructure session ships a module you wrote rather than a wrapped upstream one. The review grades that module.
 - **Least-privilege IRSA per component.** The EBS driver, the External Secrets Operator, cert-manager, ExternalDNS and the worker each get a role scoped to one set of actions on one set of resources. No `sqs:*`, no `route53:*`, no `secretsmanager:*` on `*`.
@@ -27,7 +29,7 @@ Eleven sessions take a nine-service Go application from a laptop to a secure, au
 - **Cost levers.** Spot capacity, EKS version currency, NAT versus endpoints and tearing the cluster down between sessions.
 - **Callbacks.** The EP4 node-role shortcut is removed in EP6. The EP2 worker-scaling rule returns in EP9. The EP3 subnet tags make the EP10 NLB schedulable.
 
-## Remaining project requirements, not covered as sessions
+## Remaining project requirements, not covered as single sessions (but to be covered in future Tech advanced sessions)
 
 These are in the project brief and are yours to build. They are how you earn the capstone:
 
@@ -48,4 +50,6 @@ These are in the project brief and are yours to build. They are how you earn the
 
 ## How the review grades
 
-You demonstrate the project and explain every resource you committed. The governing rule from `project.md`: if you cannot explain a resource you committed, you did not build it. State what is incomplete and how you would finish it, rather than hiding the gap.
+You demonstrate the project and explain every resource you committed. 
+
+The rules are in `project.md`: if you cannot explain a resource you created, it doesn't count. State what is incomplete and how you would finish it.
